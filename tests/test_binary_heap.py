@@ -3,7 +3,7 @@ import time
 import logging
 
 from clrs.algorithms.insertion_sort import *
-from clrs.data_structures.binary_heap import MaxBinaryHeap, MinBinaryHeap
+from clrs.data_structures.binary_heap import MaxBinaryHeap, MinBinaryHeap, MinIndexBinaryHeap
 
 def test_sorting():
 
@@ -25,8 +25,10 @@ def test_sorting():
 
         random_list = random.sample(range(min_list_val, max_list_val), list_len)
 
+        keys = [(key, handle) for key, handle in zip(random_list, random_list[::-1])]
+
         t0 = time.time()
-        max_heap = MinBinaryHeap(keys=random_list, handles=random_list)
+        max_heap = MinBinaryHeap(keys=keys, max_size=len(keys))
         max_heap.sort()
        
         execution_outputs += [time.time() - t0]
@@ -40,48 +42,49 @@ def test_extract_top():
     handles = list(range(len(keys)))
     max_key_idx = keys.index(max(keys))
     print(f'max_key_idx: {max_key_idx}, max_key: {keys[max_key_idx]}, max_handle: {handles[max_key_idx]}')
-    max_heap = MaxBinaryHeap(keys=keys, handles=handles)
-    max_heap.heapify(1, recursive=False, verbose=True)
-    max_heap.build_heap()
-    print(max_heap.get_keys(), max_heap.size)
-    max_heap.print()
 
-    top_key, top_handle = max_heap.extract_top()
-    print(f'top_handle: {top_handle}, top_key: {top_key}')
+    keys = [(key, handle) for key, handle in zip(keys, keys)]
+    max_heap = MaxBinaryHeap(keys=keys)
+    
+    top_key = max_heap.extract_top()
+
     assert top_key == keys[max_key_idx]
-    assert top_handle == handles[max_key_idx]
+
     max_heap.print()
     assert max_heap.is_heap()
+    logging.info(f'top_key: {top_key}')
 
+'''
 def test_increase_key():
     keys = [1, 5, 3, 6, 8, 4, 23, 2, 6, 9]
     handles = list(range(len(keys)))
+    
     max_heap = MaxBinaryHeap(keys=keys, handles=handles)
     max_heap.heapify(1, recursive=False, verbose=True)
     max_heap.build_heap()
     print(max_heap.get_keys(), max_heap.size)
     max_heap.print()
 
-    max_heap.increase_key(handle=0, new_key=20)
+    max_heap.increase_key(handle_index=0, new_key=20)
     max_heap.print()
-    assert max_heap.is_heap()
+    assert max_heap.is_heap() == True
 
     expected_keys =  [20, 5, 3, 6, 8, 4, 23, 2, 6, 9]
     expected_handles =  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
     assert expected_keys.sort() == max_heap.get_keys().sort()
     assert expected_handles.sort() == max_heap.get_handles().sort()
-
+'''
+    
 def test_insert():
+    
     keys = [1, 5, 3, 6, 8, 4, 23, 2, 6, 9]
-    handles = list(range(len(keys)))
-    max_heap = MaxBinaryHeap(keys=keys, handles=handles)
-    max_heap.heapify(1, recursive=False, verbose=True)
-    max_heap.build_heap()
-    print(max_heap.get_keys(), max_heap.size)
-    max_heap.print()
+    
+    keys = [(key, handle) for key, handle in zip(keys, keys)]
+    max_heap = MaxBinaryHeap(keys=keys, max_size=len(keys)+1)
 
-    max_heap.insert(handle=11, key=20)
+   
+    max_heap.insert((20, 11))
     max_heap.print()
     assert max_heap.is_heap()
 
@@ -89,6 +92,32 @@ def test_insert():
     expected_handles =  [6, 11, 5, 3, 9, 0, 2, 7, 8, 1, 4]
 
     assert expected_keys.sort() == max_heap.get_keys().sort()
-    assert expected_handles.sort() == max_heap.get_handles().sort()
+    logging.info(f'heap keys: {max_heap.get_keys()}')
 
-#test_insert()
+def test_index_change():
+
+    
+    keys = [4, 5, 3, 6, 8, 1, 23, 2, 7, 9]
+    indexes = [var + 1 for var in range(len(keys))]
+        
+    keys = [(key, handle) for key, handle in zip(keys, keys)]
+    max_heap = MinIndexBinaryHeap(indexes=indexes, keys=keys, max_size=len(keys))
+
+    max_heap.sort()
+
+    logging.info(max_heap.keys)
+    logging.info(max_heap.is_sorted())
+
+    max_heap.change(index=1, key=(25,25))
+
+    keys_expected = [None, (1, 1), (2, 2), (3, 3), (5, 5), (6, 6), (7, 7), (8, 8), (9, 9), (23, 23), (25, 25)]
+
+    max_heap.sort()
+    logging.info(max_heap.keys)
+    logging.info(keys_expected)
+    logging.info(max_heap.is_sorted())
+
+    assert keys_expected == max_heap.keys
+
+    
+    

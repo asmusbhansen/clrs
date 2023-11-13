@@ -6,7 +6,7 @@ import heapq as hq
 
 ewg = EdgeWeightedGraph(graph_filename='data/graph_files/tinyEWG.txt')
 
-class PrimsAlgorithm:
+class PrimsAlgorithmLazy:
 
     def __init__(self, edge_weighted_graph : EdgeWeightedGraph):
 
@@ -53,6 +53,6 @@ class PrimsAlgorithm:
                 hq.heappush(self.crossing_edges, edge_adjacent)
 
 
-pa = PrimsAlgorithm(edge_weighted_graph=ewg)
+pa = PrimsAlgorithmLazy(edge_weighted_graph=ewg)
 pa.compute()
 print([edge.to_string() for edge in pa.edges_on_tree])

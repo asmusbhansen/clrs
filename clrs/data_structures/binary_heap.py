@@ -2,7 +2,9 @@ import math
 
 class BinaryHeap:
 
-    def __init__(self, keys:list = [], handles = [])->None:
+    size = 0
+
+    def __init__(self, keys:list = [], max_size=10)->None:
         """
         Initialized the Max Heap
         In the heap, index 0 is not defined and is set to None
@@ -19,14 +21,12 @@ class BinaryHeap:
 
         """
 
-        if len(keys) != len(handles):
-            raise ValueError(f'Length of keys {len(keys)} must equal lenght of handles {len(handles)}')
+        self.max_size = max_size
 
-        self.size = len(keys)
-        self.keys = [None] + keys
-        self.handles = [None] + handles
+        self.priority_queue = [None] * (self.max_size + 1)
 
-        self.build_heap()
+        for key in keys:
+            self.insert(key=key)
 
     def left(self, n:int)->int:
         """
@@ -111,11 +111,11 @@ class BinaryHeap:
             top = child_idx 
         
         if verbose:
-            print(f'New top idx: {top}, value {self.keys[top]}')
+            print(f'New top idx: {top}, value {self.priority_queue[top]}')
 
         return top
 
-    def heapify(self, n : int, recursive : bool=True, verbose : bool=False)->None:
+    def sink(self, n : int, verbose : bool=False)->None:
         """
         Heapifys a subtree. Given a binary subtree of 3 nodes, the new top node is found
 
@@ -128,8 +128,6 @@ class BinaryHeap:
         ----------
         n : int
             Heap index
-        recursive : bool
-            If true, function runs recursively
         verbose : bool
             If true, debug print
        
@@ -147,9 +145,9 @@ class BinaryHeap:
         r = self.right(n)
 
         if verbose:
-            print(f'Max-heapify')
             self.print_node(n)
             
+        # Should the current parent, left or right node be top?
         top = self.get_new_top_idx(parent_idx=n, child_idx=l, verbose=verbose)
         top = self.get_new_top_idx(parent_idx=top, child_idx=r, verbose=verbose)
 
@@ -157,19 +155,18 @@ class BinaryHeap:
             self.switch_values(top, n)
             
             if verbose:
-                print(f'Switching node {top}, value {self.keys[top]} with node {n}, value {self.keys[n]}. Keys = {self.get_keys()}, size = {self.size}')
+                print(f'Switching node {top}, value {self.priority_queue[top]} with node {n}, value {self.priority_queue[n]}. Keys = {self.get_keys()}, size = {self.size}')
 
-            if recursive:
-                self.heapify(top, recursive=recursive, verbose=verbose)
+            self.sink(top, verbose=verbose)
 
         return None
 
 
-    def build_heap(self, recursive : bool=True, verbose : bool=False)->None:
+    def heapify(self, recursive : bool=True, verbose : bool=False)->None:
         """
-        Builds a heap from a randomly ordered array.
+        Heapify's a randomly ordered array.
         The function moves bottom-up and starts from size//2 to 1
-        At each node, the subtree where the node is the top node heapify is called recursively
+        At each node, the subtree where the node is the top node sink is called recursively
         to make a node sink to where it belongs
         
         Parameters
@@ -190,7 +187,7 @@ class BinaryHeap:
         for m in sub_node_range:
 
             if recursive:
-                self.heapify(m)
+                self.sink(m)
 
     def is_heap(self):
         return self.is_heap_(1)
@@ -241,30 +238,9 @@ class BinaryHeap:
 
         return True
 
-    def switch_handles(self, idx_1 : int, idx_2 : int)->None:
-        """
-        Handle value of index 1 and index 2 is switched 
-        
-        Parameters
-        ----------
-        idx_1 : int
-            Heap index
-        idx_1 : int
-            Heap index
-       
-        Returns
-        -------
-        None
-
-        """
-
-        value_idx_1 = self.handles[idx_1]
-        self.handles[idx_1] = self.handles[idx_2]
-        self.handles[idx_2] = value_idx_1
-
     def switch_values(self, idx_1 : int, idx_2 : int)->None:
         """
-        Values of index 1 and index 2 is switched for keys and handles
+        Values of index 1 and index 2 is switched for keys
         
         Parameters
         ----------
@@ -279,10 +255,9 @@ class BinaryHeap:
 
         """
 
-        self.switch_keys(idx_1=idx_1, idx_2=idx_2)
-        self.switch_handles(idx_1=idx_1, idx_2=idx_2)
+        self.switch_priority_queue(idx_1=idx_1, idx_2=idx_2)
 
-    def switch_keys(self, idx_1 : int, idx_2 : int)->None:
+    def switch_priority_queue(self, idx_1 : int, idx_2 : int)->None:
         """
         Key value of index 1 and index 2 is switched 
         
@@ -299,40 +274,20 @@ class BinaryHeap:
 
         """
 
-        value_idx_1 = self.keys[idx_1]
-        self.keys[idx_1] = self.keys[idx_2]
-        self.keys[idx_2] = value_idx_1
+        value_idx_1 = self.priority_queue[idx_1]
+        self.priority_queue[idx_1] = self.priority_queue[idx_2]
+        self.priority_queue[idx_2] = value_idx_1
 
-    def search_handle(self, handle)->int:
+    def increase_key(self, index : int, new_key : int, verbose : bool=False)->None:
         """
-        Increase key value of hanldle
+        Increase key value of key
         
         Parameters
         ----------
-        handle : Any
-            Handle
-       
-        Returns
-        -------
-        int : Handle index
-
-        """
-
-        # Naive search implementation
-        handle_index = self.handles.index(handle)
-
-        return handle_index
-
-    def increase_key(self, handle, new_key : int, verbose : bool=False)->None:
-        """
-        Increase key value of hanldle
-        
-        Parameters
-        ----------
-        handle : Any
-            Handle
+        index : int
+            Key index
         new_key : int
-            Handle key
+            New key
         verbose : bool
             If true, debug print
        
@@ -342,38 +297,43 @@ class BinaryHeap:
 
         """
 
-        handle_index = self.search_handle(handle=handle)
+        if self.priority_queue[index] is None:
+            raise ValueError(f'No key found at index {index}')
 
-        if self.keys[handle_index] > new_key:
-            raise ValueError(f'New key {new_key} smaller than existing key {self.keys[handle_index]} for handle {handle}')
+        if self.priority_queue[index] > new_key:
+            raise ValueError(f'New key {new_key} smaller than existing key {self.priority_queue[index]} for index {index}')
 
-        i = handle_index
-
-        self.keys[handle_index] = new_key
+        self.priority_queue[index] = new_key
 
         if verbose:
-            print(f'Set key index {handle_index} to {new_key}')
+            print(f'Set key index {index} to {new_key}')
 
-        # The new key value is larger than or equal to the old one
+        self.swim(i = index)
+
+    def swim(self, i, verbose=False):
+
+        # The value keys[i] may be larger than or equal to the old one
         # It might need to be moved up, keep switching parent with current value
         # while parent key is larger
-        print(f'While: i = {i}, self.keys[self.parent(i)]: {self.keys[self.parent(i)]}, self.keys[i] = {self.keys[i]}')
-        while i >= 1 and self.compare(parent_idx=self.parent(i), child_idx=i) == False:
-            print(f'Switched values for index {i}, value {self.keys[i]} and index {self.parent(i)}, value {self.keys[self.parent(i)]}')
+
+        while i > 1 and i <= self.size and self.compare(parent_idx=self.parent(i), child_idx=i) == False:
+            
+            if verbose:
+                print(f'Switched values for index {i}, value {self.priority_queue[i]} and index {self.parent(i)}, value {self.priority_queue[self.parent(i)]}')
+            
             self.switch_values(self.parent(i) , i)
             
             i = self.parent(i)
 
-    def insert(self, handle, key : int, verbose : bool=False)->None:
+
+    def insert(self, key : int, verbose : bool=False)->None:
         """
         Increase key value of hanldle
         
         Parameters
         ----------
-        handle : Any
-            Handle
-        key : int
-            Handle key
+        key : Any
+            Comparable key
         verbose : bool
             If true, debug print
        
@@ -383,18 +343,18 @@ class BinaryHeap:
 
         """
 
-        self.keys += [-math.inf]
-        self.handles += [handle]
         self.size += 1
+        self.priority_queue[self.size] = key
 
-        self.print()
+        #self.print()
+        
+        self.swim(i=self.size)
+        print(f'Inserted key: {key} at index {self.size}. Priority Queue: {self.priority_queue}')
 
-        self.increase_key(handle=handle, new_key=key)
-
-    def extract_top(self, verbose : bool=False)->tuple:
+    def extract_top(self, verbose : bool=False):
         """
         Extracts top node of the heap.
-        This is done by exchanging top node with last node and then recursicely call heapify on the node
+        This is done by exchanging top node with last node and then recursively call sink on the node
         to let it sink to it's final position.
         
         Parameters
@@ -404,7 +364,7 @@ class BinaryHeap:
        
         Returns
         -------
-        None
+        Top key
 
         """
 
@@ -414,31 +374,25 @@ class BinaryHeap:
         # Switch max and last index
         self.switch_values(1, self.size)
 
-        top_key = self.keys[self.size]
-        top_val = self.handles[self.size]
-
+        top_key = self.priority_queue[self.size]
+      
         # Decrease size
-        self.keys = self.keys[:self.size]
-        self.handles = self.handles[:self.size]
+        self.priority_queue = self.priority_queue[:self.size]
         self.size = self.size - 1
 
         if verbose:
-            print(f'Extracted key-handle pair {top_key}:{top_val}, keys left: {self.get_keys()}, size: {self.size}')
+            print(f'Extracted key {top_key}, keys left: {self.get_keys()}, size: {self.size}')
 
-        # Max-heapify first index if it exits
-        self.heapify(1)
+        # Sink first index if it exits
+        self.sink(1)
 
-        return top_key, top_val
+        return top_key
 
     def get_keys(self)->None:
-        return self.keys[1:self.size+1]
-
-    def get_handles(self)->None:
-        return self.handles[1:self.size+1]
+        return self.priority_queue[1:self.size+1]
 
     def print(self)->None:
         print(f'Heap keys: {self.get_keys()}')
-        print(f'Heap handles: {self.get_handles()}')
 
     def print_node(self, n : int)->None:
 
@@ -448,14 +402,14 @@ class BinaryHeap:
         if l > self.size:
             l_val = None
         else:
-            l_val = self.keys[l]
+            l_val = self.priority_queue[l]
 
         if r > self.size:
             r_val = None
         else:
-            r_val = self.keys[r]
+            r_val = self.priority_queue[r]
 
-        print(f'Node {n}, value {self.keys[n]}, left node {l}, value {l_val}, right node {r}, value {r_val}, size = {self.size}')
+        print(f'Node {n}, value {self.priority_queue[n]}, left node {l}, value {l_val}, right node {r}, value {r_val}, size = {self.size}')
 
     def sort(self)->None:
         """
@@ -472,16 +426,13 @@ class BinaryHeap:
         """
 
         keys_sorted = []
-        handles_sorted = []
-        while self.size > 0:
-            key_top, val_top = self.extract_top()
-            keys_sorted += [key_top]
-            handles_sorted += [val_top]
 
+        while self.size > 0:
+            key_top = self.extract_top()
+            keys_sorted += [key_top]
+          
         self.size = len(keys_sorted)
-        self.keys = [None] + keys_sorted
-        self.handles = [None] + handles_sorted
-        
+        self.priority_queue = [None] + keys_sorted
 
     def is_sorted(self)->bool:
         """
@@ -499,17 +450,261 @@ class BinaryHeap:
 
         for n in range(1, self.size-1):
             if self.compare(parent_idx=n, child_idx=n+1) is False:
-                print(f'Compare parent_idx {n}, value {self.keys[n]}, child_idx {n+1}, value {self.keys[n+1]} is False')
                 return False
         return True
 
+class IndexBinaryHeap(BinaryHeap):
+
+    def __init__(self, indexes : list = [], keys:list = [], max_size=10)->None:
+        """
+        Initialized the Max Heap
+        In the heap, index 0 is not defined and is set to None
+        After keys are initialized the heap is built
+        
+        Parameters
+        ----------
+        keys : list
+            List of keys
+       
+        Returns
+        -------
+        None
+
+        """
+
+        self.max_size = max_size
+
+        self.indexes = [None] * (self.max_size + 1)
+        self.inverse_indexes = [None] * (self.max_size + 1)
+        self.keys = [None] * (self.max_size + 1)
+
+        print(f'Init: keys = {self.keys}')
+
+        for key, index in zip(keys, indexes):
+            self.insert(index=index, key=key)
+
+    def insert(self, index : int, key : int, verbose : bool=False)->None:
+        """
+        Increase key value of hanldle
+        
+        Parameters
+        ----------
+        key : Any
+            Comparable key
+        verbose : bool
+            If true, debug print
+       
+        Returns
+        -------
+        None
+
+        """
+
+        # Let priority queue hold the indexes to the keys, and let inverse priority queue be inverse of priority queue
+        # such that priority_queue[inverse_priority_queue[i]] = i
+
+        self.size += 1
+        
+        print(f'Insert index {index}, key {key}')
+
+        self.inverse_indexes[index] = self.size
+        self.indexes[self.size] = index
+
+        self.keys[self.size] = key
+
+        self.swim(i=self.size)
+
+        print(f'Keys: {self.keys}, pq: {self.indexes}, qp: {self.inverse_indexes}')
+
+    def change(self, index, key):
+
+        # Find placement in priority queue for index
+        index_idx = self.inverse_indexes[index]
+        print(f'Overwriting index {index} with key {key}. Current priority queue index {index_idx}, key {self.keys[index_idx]}')
+        self.keys[index_idx] = key
+
+        self.swim(index_idx)
+        self.sink(index_idx)
+
+    def contains(self, index : int):
+        return self.inverse_indexes[index] != None
+    
+    def upsert(self, index, key):
+
+        if self.contains(index):
+            self.change(index=index, key=key)
+        else:
+            self.insert(index=index, key=key)
+
+
+    def switch_values(self, idx_1 : int, idx_2 : int)->None:
+        """
+        Values of index 1 and index 2 is switched 
+        
+        Parameters
+        ----------
+        idx_1 : int
+            Heap index
+        idx_1 : int
+            Heap index
+       
+        Returns
+        -------
+        None
+
+        """
+
+        inverse_idx_1 = self.indexes[idx_1]
+        inverse_idx_2 = self.indexes[idx_2]
+
+        self.indexes = self.switch_array(idx_1=idx_1, 
+                                                idx_2=idx_2, 
+                                                arr=self.indexes)
+
+        self.inverse_indexes = self.switch_array(idx_1=inverse_idx_1, 
+                                                        idx_2=inverse_idx_2, 
+                                                        arr=self.inverse_indexes)
+        
+        self.keys = self.switch_array(idx_1=idx_1, 
+                                      idx_2=idx_2, 
+                                      arr=self.keys)
+
+    def switch_array(self, idx_1 : int, idx_2 : int, arr):
+        """
+        Index value of index 1 and index 2 in arr is switched 
+        
+        Parameters
+        ----------
+        idx_1 : int
+            Heap index
+        idx_1 : int
+            Heap index
+        arr : List
+            List to swtich
+       
+        Returns
+        -------
+        None
+
+        """
+
+        value_idx_1 = arr[idx_1]
+        arr[idx_1] = arr[idx_2]
+        arr[idx_2] = value_idx_1
+
+        return arr
+
+    def switch_indexes(self, idx_1 : int, idx_2 : int)->None:
+        """
+        Index value of index 1 and index 2 is switched 
+        
+        Parameters
+        ----------
+        idx_1 : int
+            Heap index
+        idx_1 : int
+            Heap index
+       
+        Returns
+        -------
+        None
+
+        """
+
+        value_idx_1 = self.indexes[idx_1]
+        self.indexes[idx_1] = self.indexes[idx_2]
+        self.indexes[idx_2] = value_idx_1
+
+    def extract_top(self, verbose : bool=False):
+        """
+        Extracts top node of the heap.
+        This is done by exchanging top node with last node and then recursively call sink on the node
+        to let it sink to it's final position.
+        
+        Parameters
+        ----------
+        verbose : bool
+            If true, debug print
+       
+        Returns
+        -------
+        Top key
+
+        """
+
+        if self.size < 1:
+            return None
+
+        # Switch max and last index
+        self.switch_values(1, self.size)
+
+        print(f'\nExctrating')
+
+        
+        print(f'Extract top: keys: {self.keys}, {self.indexes}, {self.inverse_indexes}')
+
+
+        top_key = self.keys[self.size]
+        top_index = self.indexes[self.size]
+        
+        print(f'Extracting top key: {top_key}, index: {top_index}')
+      
+        # Decrease size
+        self.keys[self.size] = None
+        self.indexes[self.size] = None
+        self.inverse_indexes[self.size] = None
+        self.size = self.size - 1
+
+        if verbose:
+            print(f'Extracted key {top_key}, keys left: {self.get_keys()}, size: {self.size}')
+
+        # Sink first index if it exits
+        self.sink(1)
+
+        return top_key, top_index
+        
+    def sort(self)->list:
+        """
+        Sorts heap by extracting top node until no more nodes exists in the heap
+
+        Parameters
+        ----------
+        None
+       
+        Returns
+        -------
+        None
+
+        """
+
+        keys_sorted = [None] * (self.max_size + 1)
+        index_sorted = [None] * (self.max_size + 1)
+        inverse_index_sorted = [None] * (self.max_size + 1)
+
+        count = 1
+
+        while self.size > 0:
+            top_key, top_index = self.extract_top()
+
+            keys_sorted[count] = top_key
+            index_sorted[count] = top_index
+            inverse_index_sorted[top_index] = count
+            
+            count += 1
+          
+        self.size = count - 1
+        self.keys = keys_sorted
+        self.indexes = index_sorted
+        self.inverse_indexes = inverse_index_sorted
+        
+
 
 class MaxBinaryHeap(BinaryHeap):
-
+    
     def compare(self, parent_idx : int, child_idx : int)->bool:
         """
         Compares the values of two indexes in the heap
-        Returns True is value of parent index is larger than value of child index
+        Returns True if parent key is larger than child key
         
         Parameters
         ----------
@@ -524,32 +719,53 @@ class MaxBinaryHeap(BinaryHeap):
 
         """
         
+        #print(f'Comparing parent_idx: {parent_idx} value {self.priority_queue[parent_idx]} with child_idx: {child_idx} value {self.priority_queue[child_idx]}, {self.priority_queue[parent_idx] >= self.priority_queue[child_idx]}')
+        if self.priority_queue[parent_idx] >= self.priority_queue[child_idx]:
+            return True
+        else:
+            return False
+        
+
+class MinBinaryHeap(BinaryHeap):
+
+    def compare(self, parent_idx : int, child_idx : int)->bool:
+        if self.priority_queue[parent_idx] <= self.priority_queue[child_idx]:
+            return True
+        else:
+            return False
+        
+class MinIndexBinaryHeap(IndexBinaryHeap):
+    
+    def compare(self, parent_idx : int, child_idx : int)->bool:
+        if self.keys[parent_idx] <= self.keys[child_idx]:
+            return True
+        else:
+            return False
+        
+class MaxIndexBinaryHeap(IndexBinaryHeap):
+    
+    def compare(self, parent_idx : int, child_idx : int)->bool:
         if self.keys[parent_idx] >= self.keys[child_idx]:
             return True
         else:
             return False
 
-class MinBinaryHeap(BinaryHeap):
+'''
+keys = [4, 5, 3, 6, 8, 1, 23, 2, 7, 9]
+indexes = [var + 1 for var in range(len(keys))]
 
-    def compare(self, parent_idx : int, child_idx : int)->bool:
-        """
-        Compares the values of two indexes in the heap
-        Returns True is value of parent index is larger than value of child index
-        
-        Parameters
-        ----------
-        parent_idx : int
-            Heap index
-        child_idx : int
-            Heap index
-       
-        Returns
-        -------
-        Bool
+keys = [(key, handle) for key, handle in zip(keys, keys)]
+max_heap = MinIndexBinaryHeap(indexes=indexes, keys=keys, max_size=len(keys))
 
-        """
-        
-        if self.keys[parent_idx] <= self.keys[child_idx]:
-            return True
-        else:
-            return False
+max_heap.sort()
+
+print(max_heap.keys)
+
+max_heap.change(index=1, key=(25,25))
+
+print(max_heap.keys)
+
+max_heap.sort()
+
+print(max_heap.keys)
+'''
